@@ -1,0 +1,13 @@
+# minigrep
+
+usage:
+
+```
+cargo run -- <string to search> <file path>
+```
+
+example:
+
+```
+cargo run -- the files/poem.txt
+```
