@@ -2,15 +2,21 @@ use std::{
     fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
+    thread,
+    time::Duration,
 };
+use thread_pool::ThreadPool;
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:7877").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
 
-        handle_connection(stream);
+        pool.execute(|| {
+            handle_connection(stream);
+        });
     }
 }
 
@@ -18,10 +24,13 @@ fn handle_connection(mut stream: TcpStream) {
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
-    let (status_line, filename, message) = if request_line == "GET / HTTP/1.1" {
-        ("HTTP/1.1 200 OK", "hello.html", "index")
-    } else {
-        ("HTTP/1.1 404 NOT FOUND", "notfound.html", "missing error")
+    let (status_line, filename, message) = match &request_line[..] {
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "hello.html", "index"),
+        "GET /wait HTTP/1.1" => {
+            thread::sleep(Duration::from_secs(10));
+            ("HTTP/1.1 200 OK", "wait.html", "wait")
+        }
+        _ => ("HTTP/1.1 404 NOT FOUND", "notfound.html", "missing error"),
     };
 
     let contents = fs::read_to_string(filename).unwrap();
