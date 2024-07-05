@@ -9,26 +9,37 @@ struct Worker {
     // here we put unit type () because our use case doesn't return
     // if we want to expand this thread pool struct, we can use type T
     id: u32,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
     fn new(id: u32, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || loop {
-            let job = receiver.lock().unwrap().recv().unwrap();
+            let message = receiver.lock().unwrap().recv();
 
-            println!("worker {id} got a job, executing.");
+            match message {
+                Ok(job) => {
+                    println!("worker {id} got a job, executing.");
 
-            job();
+                    job();
+                }
+                Err(_) => {
+                    println!("worker {id} disconnected, shutting down.");
+                    break;
+                }
+            }
         });
 
-        Worker { id, thread }
+        Worker {
+            id,
+            thread: Some(thread),
+        }
     }
 }
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>, // sends jobs to workers
+    sender: Option<mpsc::Sender<Job>>, // sends jobs to workers
 }
 
 impl ThreadPool {
@@ -52,7 +63,10 @@ impl ThreadPool {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
 
-        ThreadPool { workers, sender }
+        ThreadPool {
+            workers,
+            sender: Some(sender),
+        }
     }
 
     pub fn execute<F>(&self, f: F)
@@ -61,6 +75,22 @@ impl ThreadPool {
     {
         let job = Box::new(f);
 
-        self.sender.send(job).unwrap();
+        self.sender.as_ref().unwrap().send(job).unwrap();
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        // first drop our transmitter
+        drop(self.sender.take());
+
+        // then drop the worker threads
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
     }
 }
