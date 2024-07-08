@@ -247,7 +247,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn expression_computes() {
+    fn simple_expression_computes() {
+        let expr_str = "2^2^2";
+        let mut expr_parsed = Expression::new(expr_str);
+
+        assert_eq!(Ok(16), expr_parsed.eval());
+    }
+
+    #[test]
+    fn complex_expression_computes() {
         let expr_str = "21 + 3 + 6 * 27 - (92 - 12) / 5 + 24";
         let mut expr_parsed = Expression::new(expr_str);
 
