@@ -1,0 +1,11 @@
+# expression evaluation
+
+usage:
+
+change the expression in `main.rs`
+
+then run:
+
+```
+cargo run
+```
