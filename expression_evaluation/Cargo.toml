@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+logical_expression = {path = "logical"}
 numerical_expression = {path = "numerical"}
