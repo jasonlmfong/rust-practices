@@ -1,13 +1,13 @@
 # web server
 
-usage:
+launch the web server by running:
 
 ```
-cargo run -- <string to search> <file path>
+cargo run
 ```
 
-example 1:
+then visit `localhost:7878/` or `127.0.0.1:7878/`
 
-```
-cargo run -- the files/poem.txt
-```
+try other endpoints like `localhost:7878/wait`
+
+or anything you can think of! `localhost:7878/qwerty`
